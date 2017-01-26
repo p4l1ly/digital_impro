@@ -2,14 +2,11 @@ module Kinematics where
 
 import Control.Arrow
 
-simpleKinematics :: [(Double, Double, Double, Double)] -> [(Double, Double)]
-simpleKinematics = map (speed &&& angle)
-  where speed (m1, m2, m3, m4) = startSpeed + speedCoef * (m1 + m2 - m3 - m4)
-        angle (m1, m2, m3, m4) = angleCoef * (m2 + m4 - m1 - m3)
+type Accel = [Double] -> Double
 
-        speedCoef  = 0.0030
-        angleCoef  = 0.4
-        startSpeed = 0.0050
+simpleKinematics :: Double -> Accel -> Accel -> [[Double]] -> [(Double, Double)]
+simpleKinematics speed0 distance angle ms = (`zip` map angle ms) $
+  map (speed0 +) . tail $ scanl (+) 0 $ map distance ms
 
 trajectory :: ((Double, Double), Double) -> [(Double, Double)]
            -> [((Double, Double), Double)]
