@@ -138,11 +138,13 @@ ApplicationWindow {
         Button {
           text: "Generate"
           onClicked: nextTrajectory()
+          activeFocusOnPress: true
         }
 
         CheckBox {
           id: auto
           text: "Auto"
+          activeFocusOnPress: true
         }
       }
 
