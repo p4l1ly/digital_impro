@@ -11,7 +11,7 @@ ApplicationWindow {
   height: 700
 
   Timer {
-    interval: 300
+    interval: 100
     running: true
     repeat: true
     onTriggered: {
