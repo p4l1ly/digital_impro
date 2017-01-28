@@ -70,7 +70,7 @@ guiSf style0 = do
     (distance, angle, motors) <- lift $ hold r -< accelE
 
     gen <- fetch -< ()
-    let (trajE, genE) = splitE . tag nextE $ MS.runState (loop 10000) gen
+    let (trajE, genE) = splitE . tag nextE $ MS.runState (loop 1000) gen
         loop 0 = return []
         loop i = do
           ms <- generateMotors motors minLen maxLen
