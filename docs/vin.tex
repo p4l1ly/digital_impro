@@ -122,18 +122,26 @@ implementovaného knižnicou \emph{Yampa}.
 
 \section{Kompilácia}
 
-Aplikácia je závislá na knižnici \emph{Qt5}. Pre jej jednoduchú kompiláciu je
-potrebné mať nainštalovaný program \emph{cabal-install}, ktorý býva štandardnou
-súčasťou Linuxových distribúcií. Na Windowse je tento program obsiahnutý v
-balíku \emph{Haskell Platform}. Vojdite do adresára projektu a v príkazovom
-riadku vykonajte následovné:
+Predkompilovanú aplikáciu neprikladám, pretože by takto určite v inom prostredí
+nefungovala. Kompletný inštalačný balíček by musel byť spätý s distribúciou
+Linuxu, v prípade Windowsu inštalačné balíčky proste vytvárať neviem a ani na to
+nemám vhodnú platformu, kde by som sa to naučil a vytvoril to (a pravdupovediac
+sa mi to ani nechce). Preto je potrebné aplikáciu skompilovať, kompilácia však
+nie je vôbec ťažká.
+
+Aplikácia je závislá na knižnici \emph{Qt5}. Tú si nainštalujete pomocou
+balíkovacieho systému vašej Linuxovej distribúcie (na Windowse proste nejak
+inak). Pre jej jednoduchú kompiláciu je potrebné mať nainštalovaný program
+\emph{cabal-install}, ktorý býva štandardnou súčasťou Linuxových distribúcií (na
+Windowse je tento program obsiahnutý v balíku \emph{Haskell Platform}). Vojdite
+do adresára projektu a v príkazovom riadku vykonajte následovné:
 
 \texttt{cabal sandbox init}
 
 \texttt{cabal install}
 
 Aplikácia je takto nainštalovaná v separovanom prostredí, tzv. \emph{sandbox},
-aby sme sa vyhli konfliktom s prípadnými inými knižnicami GHC nainštalovanými v
+aby sme sa vyhli konfliktom s prípadnými inými knižnicami nainštalovanými v
 systéme, a jej spustiteľný program sa v prípade Linuxu nachádza na ceste
 \texttt{.cabal-sandbox/bin/digital\_impro}.
 
