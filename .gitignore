@@ -1,1 +1,6 @@
 dist/*
+
+*.aux
+*.out
+*.log
+*.pdf
