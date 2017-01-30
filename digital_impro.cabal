@@ -23,7 +23,7 @@ executable digital_impro
   other-modules:       MotorGenerator, Kinematics, Defaults
   ghc-options:         -threaded
   other-extensions:    TupleSections, Arrows
-  build-depends:       base, random, filepath, JuicyPixels, cairo, mtl, Yampa,
+  build-depends:       base, random, filepath, JuicyPixels, mtl, Yampa,
                        hsqml, text, containers, arrows, directory, transformers,
                        regex-posix, hint
   hs-source-dirs:      src
