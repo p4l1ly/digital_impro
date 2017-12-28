@@ -6,6 +6,7 @@ module Main where
 import Debug.Trace
 
 import Control.Arrow
+import System.IO
 import System.Random
 import System.FilePath
 import System.Directory
@@ -59,6 +60,11 @@ ifInside :: Double -> Double -> Double -> Double
 ifInside val x y | x < 0 || x >= 1 || y < 0 || y >= 1 = 0
                  | otherwise = val
 
+flushPutStrLn :: String -> IO ()
+flushPutStrLn str = do
+  putStrLn str
+  hFlush stdout
+
 guiSf :: SegmentStyle -> IO (StateArrow StdGen SF Input Output)
 guiSf style0 = do
   Just r <- runMaybeT $
@@ -104,7 +110,7 @@ main = do
   let guiActuate :: ReactHandle Input Output -> Bool -> Output -> IO Bool
       guiActuate _ _ (O endE nextE roomE) = do
         flip (event (return ())) nextE $
-          putStrLn . B.unpack . encode . J.Traj
+          flushPutStrLn . B.unpack . encode . J.Traj
 
         return $ isEvent endE
 
@@ -126,7 +132,7 @@ main = do
   cmds <- B.getContents
   forM_ (B.lines cmds) $ \x -> do
     case eitherDecode x of
-      Left err -> B.putStrLn . encode $ J.err err
+      Left err -> flushPutStrLn . B.unpack . encode $ J.err err
       Right x -> jsonToEvent x >>= react'
 
   react' noI{endEvent = Event ()}
@@ -134,7 +140,7 @@ main = do
 jsonToEvent :: J.Cmd -> IO Input
 jsonToEvent J.Cmd{J.event = "generate"} = return noI{nextEvent = Event ()}
 jsonToEvent J.Cmd{J.event} = do
-  B.putStrLn . encode . J.err $ printf "unknown event %s" event
+  flushPutStrLn . B.unpack . encode . J.err $ printf "unknown event %s" event
   return noI
 
 wrap = MaybeT . return
