@@ -8,10 +8,13 @@ const binary = join(__dirname, '..', config.binary);
 
 
 module.exports = () => {
-
     const bin = spawn(binary);
 
 
-    bin.stdin.write(JSON.stringify({ event: 'generate' }));
+    bin.stdin.write(JSON.stringify({ event: 'generate' }) + '\n');
+
+    bin.stdout.on('data', (chunk) => {
+        console.log(JSON.parse(chunk.toString()));
+    });
 
 }

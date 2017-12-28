@@ -1,3 +1,7 @@
 const driver = require('./driver');
 
-driver();
+module.exports = () => {
+
+    driver();
+
+}

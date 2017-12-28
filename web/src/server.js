@@ -3,6 +3,12 @@ const { join } = require('path');
 
 const app = express();
 
+const runBinary = require('./core/interface');
+
+
+runBinary();
+
+
 app.use('/js', express.static(join(__dirname, '../public/js/libs')));
 app.use('/js/app.js', express.static(join(__dirname, '../public/js/bundle.js')));
 app.use('/favicon.ico', express.static(join(__dirname, '../public/favicon.ico')));
