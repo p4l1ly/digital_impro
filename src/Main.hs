@@ -103,7 +103,8 @@ main = do
 
   let guiActuate :: ReactHandle Input Output -> Bool -> Output -> IO Bool
       guiActuate _ _ (O endE nextE roomE) = do
-        flip (event (return ())) nextE $ B.putStrLn . encode . J.Traj
+        flip (event (return ())) nextE $
+          putStrLn . B.unpack . encode . J.Traj
 
         return $ isEvent endE
 
