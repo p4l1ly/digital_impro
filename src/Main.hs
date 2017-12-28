@@ -1,13 +1,15 @@
-{-# LANGUAGE TupleSections, Arrows, TypeFamilies, RankNTypes, LambdaCase #-}
+{-# LANGUAGE Arrows, LambdaCase, NamedFieldPuns, OverloadedStrings,
+             ExtendedDefaultRules #-}
 
 module Main where
+
+import Debug.Trace
 
 import Control.Arrow
 import System.Random
 import System.FilePath
 import System.Directory
 import FRP.Yampa
-import Graphics.QML
 import Control.Concurrent.MVar
 import Paths_digital_impro
 import Control.Monad
@@ -26,10 +28,13 @@ import Data.List
 import Text.Regex.Posix
 import Text.Printf
 import Language.Haskell.Interpreter hiding (lift)
+import Data.Aeson hiding (unlines)
+import qualified Data.ByteString.Lazy.Char8 as B
 
 import MotorGenerator
 import Kinematics
 import qualified Defaults as D
+import qualified Json as J
 
 type Room  = Double -> Double -> Double
 type Pt    = (Double, Double)
@@ -95,30 +100,10 @@ main = do
   ranGen <- newStdGen
 
   timeV <- newMVar 0
-  roomV <- newMVar ""
-  trajV <- newMVar ([] :: [[Double]])
 
-  trajSig <- newSignalKey :: IO (SignalKey (IO ()))
-  roomSig <- newSignalKey :: IO (SignalKey (IO ()))
-  confSig <- newSignalKey :: IO (SignalKey (IO ()))
-
-  minLenV <- newMVar D.minLength
-  maxLenV <- newMVar D.maxLength
-
-  fireCtxSigV <- newEmptyMVar
-  let fireCtxSig sig = join $ ($ sig) <$> readMVar fireCtxSigV
-
-      guiActuate :: ReactHandle Input Output -> Bool -> Output -> IO Bool
+  let guiActuate :: ReactHandle Input Output -> Bool -> Output -> IO Bool
       guiActuate _ _ (O endE nextE roomE) = do
-        flip (event (return ())) nextE $ \traj -> do
-          let flatten ((x, y), ((r, g, b, a), w)) =
-                [x, y, r, g, b, a, w]
-          void $ swapMVar trajV $ map flatten traj
-          fireCtxSig trajSig
-
-        flip (event (return ())) roomE $ \roomPath -> do
-          swapMVar roomV roomPath
-          fireCtxSig roomSig
+        flip (event (return ())) nextE $ B.putStrLn . encode . J.Traj
 
         return $ isEvent endE
 
@@ -138,113 +123,19 @@ main = do
         react reactHandle (t, Just evs)
         return 0
 
-      params = ["minLength", "maxLength", "initVelocity", "accelerationFormula",
-                "angularAccelerationFormula"]
+  cmds <- B.getContents
+  forM_ (B.lines cmds) $ \x -> do
+    case eitherDecode x of
+      Left err -> B.putStrLn . encode $ J.err err
+      Right x -> jsonToEvent x >>= react'
 
-  (failVs, confProps) <- (unzip <$>) . forM params $ \p -> do
-    var <- newMVar False
-    return ((p, var), defPropertySigRO' p confSig $ \_ -> readMVar var)
+  react' noI{endEvent = Event ()}
 
-  let check :: String -> (Event a -> Input) -> MaybeT IO a -> IO ()
-      check param = \input check_ -> do
-        result <- runMaybeT check_
-        case result of
-          Just x -> do
-            swapMVar var False
-            fireCtxSig confSig
-            react' (input $ Event x)
-          _ -> do
-            swapMVar var True
-            fireCtxSig confSig
-
-        where Just var = lookup param failVs
-
-      defaults =
-        [ ("defMinLength"                  , show D.minLength)
-        , ("defMaxLength"                  , show D.maxLength)
-        , ("defInitVelocity"               , show D.initVelocity)
-        , ("defAccelerationFormula"        , D.accelerationFormula)
-        , ("defAngularAccelerationFormula" , D.angularAccelerationFormula) ]
-
-      defaultProps = (`map` defaults) $ \(a, b) ->
-        defPropertyConst' a $ \_ -> return $ T.pack b
-
-      checkFormula :: T.Text -> T.Text -> IO ()
-      checkFormula a aa =
-        check "accelerationFormula" (\e -> noI{accelEvent = e}) $
-          compileFormulae (T.unpack a) (T.unpack aa)
-
-  ctxClass <- newClass $
-    [ defPropertyConst' "currentDirectory" $ \_ -> return pwd
-
-    , defMethod' "nextTrajectory" $ \_ -> do
-        react' noI{nextEvent = Event ()}
-
-    , defMethod' "loadWall"       $ \_ path -> do
-        let path'       = drop 7 $ T.unpack path
-            problem str = putStrLn str >> return False
-
-        mimg <- readImage path'
-        case mimg of
-          Right (ImageY8 img) -> do
-            let (w, h) = fromIntegral *** fromIntegral
-                       $ imageWidth &&& imageHeight $ img
-                room x y = ifInside (fromIntegral p / 255) x y
-                  where p = pixelAt img (floor $ x * w) (floor $ y * h)
-
-            react' noI{roomEvent = Event (path', room)}
-            return True
-
-          Right _  -> problem $ "Error: Image should be RGB8 bitmap"
-          Left str -> problem $ "Error reading image:\n" ++ str
-
-    , defMethod' "initialize" $ \objRef ->
-        fireCtxSigV `putMVar` (`fireSignal` objRef)
-
-    , defMethod' "quit" $ \_ ->
-        react' noI{endEvent = Event ()}
-
-    , defPropertySigRO' "trajectory" trajSig $ \_ -> readMVar trajV
-    , defPropertySigRO' "roomPath" roomSig $ \_ -> T.pack <$> readMVar roomV
-
-    , defMethod' "setMinLength" $ \_ str ->
-        check "minLength" (\e -> noI{minLenEvent = e}) $ do
-          l <- wrap . readMaybe $ T.unpack str
-          when (l < 0) fail'
-          maxLen <- liftIO $ readMVar maxLenV
-          when (l > maxLen) fail'
-          liftIO $ swapMVar minLenV l
-          return l
-
-    , defMethod' "setMaxLength" $ \_ str ->
-        check "maxLength" (\e -> noI{maxLenEvent = e}) $ do
-          l <- wrap . readMaybe $ T.unpack str
-          minLen <- liftIO $ readMVar minLenV
-          when (l < minLen) fail'
-          liftIO $ swapMVar maxLenV l
-          return l
-
-    , defMethod' "setInitVelocity" $ \_ str ->
-        check "initVelocity" (\e -> noI{speed0Event = e}) $ do
-          s <- wrap . readMaybe $ T.unpack str
-          return s
-
-    , defMethod' "setAccelerationFormula" $ \_ -> checkFormula
-    , defMethod' "setAngularAccelerationFormula" $ \_ -> checkFormula
-
-    , defMethod' "recompileConfig" $ \_ ->
-        recompileConfig cfgPath >>= \case
-          Just style -> react' noI{cfgEvent = Event style}
-          _ -> return ()
-
-    ] ++ confProps ++ defaultProps
-
-  ctx <- newObject ctxClass ()
-  qmlPath <- getDataFileName "qml/Main.qml"
-  runEngineLoop
-    defaultEngineConfig
-      { initialDocument = fileDocument qmlPath
-      , contextObject   = Just $ anyObjRef ctx }
+jsonToEvent :: J.Cmd -> IO Input
+jsonToEvent J.Cmd{J.event = "generate"} = return noI{nextEvent = Event ()}
+jsonToEvent J.Cmd{J.event} = do
+  B.putStrLn . encode . J.err $ printf "unknown event %s" event
+  return noI
 
 wrap = MaybeT . return
 

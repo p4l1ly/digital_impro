@@ -20,11 +20,12 @@ data-dir:            res
 
 executable digital_impro
   main-is:             Main.hs
-  other-modules:       MotorGenerator, Kinematics, Defaults
-  ghc-options:         -threaded
+  other-modules:       MotorGenerator, Kinematics, Defaults,
+                       Paths_digital_impro, Json
+  ghc-options:         -threaded -dynamic
   other-extensions:    TupleSections, Arrows
   build-depends:       base, random, filepath, JuicyPixels, mtl, Yampa,
-                       hsqml, text, containers, arrows, directory, transformers,
-                       regex-posix, hint
+                       text, containers, arrows, directory, transformers,
+                       regex-posix, hint, aeson, bytestring
   hs-source-dirs:      src
   default-language:    Haskell2010
