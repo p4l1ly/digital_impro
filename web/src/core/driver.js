@@ -18,21 +18,9 @@ module.exports = () => {
 
     let response = '';
 
-    let charsc = 0;
-
 
     bin.stdout.on('data', (chunk) => {
-        //response += chunk.toString();
-        
-        //console.log(chunk.toString().length);
-        console.log(chunk);
-        //charsc += chunk.toString().length;
-        //console.log(charsc);
-        //return true;
-        /*if(chunk.toString().endsWith('\n')) {
-            console.log('endswith');
-            console.log(response);
-        }*/
+        response += chunk;
     });
 
     bin.stderr.on('data', (chunk) => {
