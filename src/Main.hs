@@ -109,7 +109,6 @@ main = do
 
   pwd <- T.pack <$> getCurrentDirectory
   cfgPath <- getDataFileName "cfg/Config.hs"
-  putStrLn cfgPath
 
   style <- (<$> recompileConfig cfgPath) $ \case
     Just style -> style
